@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+
+    <bean id="poolConfig" class="redis.clients.jedis.JedisPoolConfig">
+<!--        获取最大空闲连接数-->
+        <property name="maxIdle" value="300"/>
+<!--        获取连接时的最大等待毫秒数-->
+        <property name="maxWaitMillis" value="3000"/>
+<!--        在获取连接的时候检查有效性-->
+        <property name="testOnBorrow" value="true"/>
+    </bean>
+
+    <!--===========从外部配置文件获取redis相关信息=========-->
+    <bean id="redisConnectFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">
+<!--        主机名-->
+        <property name="hostName" value="${redis.ip}" />
+<!--        端口号-->
+        <property name="port" value="${redis.port}" />
+<!--        选用的数据库-->
+        <property name="database" value="${redis.database}" />
+<!--        连接池名称，引用上面配置的连接池-->
+        <property name="poolConfig" ref="poolConfig"/>
+    </bean>
+
+
+    <!--======redis模板配置:
+    redisTemplate 模板配置，主要是将 Redis 模板交给 Spring 管理、
+    引入上面配置的 Redis 连接工厂，对中文存储进行序列化操作等
+     =====-->
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate">
+        <property name="connectionFactory" ref="redisConnectFactory"/>
+        <!-- 对于中文的存储 需要进行序列化操作存储  -->
+        <property name="keySerializer">
+            <bean class="org.springframework.data.redis.serializer.StringRedisSerializer"/>
+        </property>
+
+        <property name="valueSerializer">
+            <bean class="org.springframework.data.redis.serializer.StringRedisSerializer"/>
+        </property>
+    </bean>
+
+</beans>

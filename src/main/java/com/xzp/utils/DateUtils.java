@@ -1,0 +1,38 @@
+package com.xzp.utils;
+
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class DateUtils {
+
+    public static Date StringToDate(String dateStr,String formatStr){
+        DateFormat dd = new SimpleDateFormat(formatStr);
+        Date date = null;
+        try {
+            date = dd.parse(dateStr);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return date;
+    }
+
+
+
+    /**
+     * 将日期根据指定根式转成字符串
+     * @param date
+     * @param format
+     * @return
+     */
+    public static String formatDate(Date date ,String format){
+        if (date == null){
+            return null;
+        }
+
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(format);
+        String dateString = simpleDateFormat.format(date);
+        return dateString;
+    }
+}

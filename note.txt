@@ -1,0 +1,139 @@
+1.srping-mvc.xml 为 SpringMVC 核心配置文件，主要包括 Controller 层的包扫描、视图模式配置（跳转路径的前后缀）、文件上传配置、静态资源处理等。
+2.spring-mybatis.xml 为 Spring 和 Mybatis 整合配置文件，主要进行扫描包的配置、数据源的配置、映射文件的配置、事务管理配置等.
+
+
+
+web.xml 为 Web 容器的配置文件，用来初始化配置信息，主要定义了：
+
+Web 应用的名字、描述（display-name 和 description 标签）;
+应用范围的初始化参数（context-param 标签）；
+过滤器配置（filter 标签）；
+监听器配置(listener 标签)；
+servlet 配置（servlet 标签，如前端控制器和验证码）；
+欢迎页面（welcome-file-list 标签，如 index.jsp 页面）；
+session失效时间（session-config 标签）；
+错误页面配置（error-page 标签，如 404、500错误页面等）。
+
+
+
+
+
+置文件加载顺序
+Web 容器加载配置文件顺序
+上面，我们把配置文件配置好了，那怎样才能起作用呢？这就需要 Web 容器来加载了。Web 容器加载配置文件的过程如下。
+
+启动 Tomcat 后，Web 容器首先加载 web.xml 文件。
+
+web.xml 文件是创建 Web 项目所需要的配置文件，用来初始化配置信息，主要包含拦截器、过滤器、servlet 等的配置，它的位置在项目 WEB-INF 目录下。
+
+在 web.xml 的 <context-param>中加载其他 XML 和 log4j.properties 文件，代码如下：
+
+     <context-param>
+    <param-name>contextConfigLocation</param-name>
+    <param-value>
+      classpath*:spring-mybatis.xml,
+      classpath*:applicationContext-redis.xml,
+      classpath*:applicationContext-activemq.xml,
+    </param-value>
+      </context-param>
+
+     <context-param>
+    <param-name>log4jConfigLocation</param-name>
+    <param-value>classpath:log4j.properties</param-value>
+      </context-param>
+其中 param-name 的名称是固定格式，param-value 是要加载的配置文件名，多个用逗号隔开，通过 Ctrl+鼠标左键可定位到相应配置文件。
+
+接着，根据 spring-mybatis.xml 中的 PropertiesFactoryBean 加载多个 properties 文件，代码如下：
+
+       <bean id="configProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+        <property name="locations">
+            <list>
+                <value>classpath:jdbc.properties</value>
+                <value>classpath:redis.properties</value>
+            </list>
+        </property>
+        <property name="fileEncoding" value="UTF-8"/>
+    </bean>
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PreferencesPlaceholderConfigurer">
+        <property name="properties" ref="configProperties"/>
+    </bean>
+通过 property 标签内的 list 标签可以加载多个 properties 文件，value 标签内就是具体的 properties 文件的路径，通过 Ctrl+鼠标左键可以定位到相应的文件。
+
+根据 spring-mybatis.xml 的 SqlSessionFactoryBean 加载 mybatis 核心配置文件 mybatis-config.xml 以及其他映射文件
+
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <!-- 配置Mybatis的核心配置文件 -->
+        <property name="configLocation" value="classpath:mybatis-config.xml" />
+        <!-- 自动扫描mapping.xml文件 -->
+        <property name="mapperLocations" value="classpath:mapping/*.xml"></property>
+    </bean>
+其中 property 标签的 name 值是固定的，通过该属性加载对应的 value 中的值，value 的值是配置文件的路径，通过 Ctrl+鼠标左键可访问该文件。
+
+然后，加载前端控制器 DispatcherServlet 的配置文件 srping-mvc.xml。
+
+      <!-- spring mvc servlet-->
+      <servlet>
+    <servlet-name>SpringMVC</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+    <init-param>
+      <param-name>contextConfigLocation</param-name>
+      <param-value>classpath:spring-mvc.xml</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+    <async-supported>true</async-supported>
+      </servlet>
+      <!-- servlet-mapping -->
+      <servlet-mapping>
+    <servlet-name>SpringMVC</servlet-name>
+    <!-- 此处也可以配置成 *.do 形式 -->
+    <url-pattern>/</url-pattern>
+      </servlet-mapping>
+其中 init-param 标签是前端控制器的初始化参数配置，param-name 参数名为固定值，param-value 参数值为具体的配置文件路径，以此来加载对应的配置文件。
+
+<load-on-startup>1</load-on-startup>的正数值越小，启动该 Servlet 的优先级越高。
+
+这样所有的配置文件就加载完毕了！
+
+
+
+
+
+
+
+
+
+
+
+功能一:  注册登录:
+我们看下调用 captchaServlet 的过程：
+
+（1）根据 URL /captchaServlet 找到名为 CaptchaServlet 的 Servlet。
+
+（2）然后根据名字 CaptchaServlet 找到具体的 Servlet 位置，就可以调用其中的方法返回验证码图片。
+
+3.在 common 包下引入 CodeCaptchaServlet.java，制作验证码的类，主要是通过 Graphics 设置图片大小，然后随机生成干扰点和4位随机验证码，并保存到 Session 中，用于注册时验证。生成验证码的 CodeCaptchaServlet.java 文件我已放在了文末的百度网盘链接中，可以当作工具类来直接使用。
+
+4.重新启动 Tomcat，点击 index.jsp 内的链接“点我注册”查看效果：
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
